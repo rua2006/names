@@ -261,11 +261,11 @@ input:focus { outline: none; }
     <p class="muted">Who's swiping right now?</p>
   </div>
   <button class="player-btn fade-up" id="player-btn-p1" onclick="selectPlayer('p1')">
-    <span id="player-label-p1">Partner 1</span>
+    <span id="player-label-p1">Ravi</span>
     <span class="sub">Tap to start swiping as you</span>
   </button>
   <button class="player-btn fade-up" id="player-btn-p2" onclick="selectPlayer('p2')" style="animation-delay:0.08s">
-    <span id="player-label-p2">Partner 2</span>
+    <span id="player-label-p2">Jane</span>
     <span class="sub">Tap to start swiping as you</span>
   </button>
 </div>
@@ -396,7 +396,7 @@ input:focus { outline: none; }
 // ── State ─────────────────────────────────────────────────────────────────────
 let state = {
   names:   [],    // [{ id, name, gender, culture, meaning, origin, votes:{p1,p2} }]
-  players: { p1: 'Partner 1', p2: 'Partner 2' },
+  players: { p1: 'Ravi', p2: 'Jane' },
   current: null,  // 'p1' | 'p2'
   swipeIdx: 0,
   cultureSel: '',
