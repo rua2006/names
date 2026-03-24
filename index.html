@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>🌸 Baby Name Swiper</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+
+<style>
+/* ── Reset & base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #fdf8f2; }
+body { font-family: 'DM Sans', sans-serif; color: #4a3728; -webkit-tap-highlight-color: transparent; }
+button { font-family: 'DM Sans', sans-serif; cursor: pointer; transition: transform 0.12s, opacity 0.12s; }
+button:active { transform: scale(0.95); }
+input { font-family: 'DM Sans', sans-serif; }
+input:focus { outline: none; }
+.serif { font-family: 'Playfair Display', serif; }
+.italic { font-style: italic; }
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+@keyframes floatUp {
+  0%   { transform: translateY(0) scale(1) rotate(var(--r)); opacity: 1; }
+  100% { transform: translateY(-120vh) scale(0.2) rotate(calc(var(--r) + 90deg)); opacity: 0; }
+}
+@keyframes popIn {
+  0%   { transform: scale(0.25) rotate(-6deg); opacity: 0; }
+  65%  { transform: scale(1.08) rotate(1deg);  opacity: 1; }
+  100% { transform: scale(1) rotate(0);        opacity: 1; }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.08); }
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* ── Screens ──────────────────────────────────────────────────────────────── */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; align-items: center; }
+
+/* ── Utility ──────────────────────────────────────────────────────────────── */
+.center { text-align: center; }
+.fade-up { animation: fadeUp 0.5s ease both; }
+.pill { display: inline-block; padding: 4px 12px; border-radius: 100px; font-size: 11px; }
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.btn {
+  border: none; border-radius: 100px; font-size: 14px; font-weight: 600;
+  padding: 12px 24px; letter-spacing: 0.2px;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #d4789a, #c26b8e);
+  color: #fff; box-shadow: 0 4px 18px rgba(194,107,142,0.38);
+}
+.btn-secondary { background: #fff; color: #4a3728; border: 1.5px solid #e0cfc4; }
+.btn-ghost { background: transparent; color: #9a8678; border: 1.5px solid #e8d8c8; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-full { width: 100%; padding: 14px; font-size: 16px; }
+.btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── Card ─────────────────────────────────────────────────────────────────── */
+.card {
+  background: #fff; border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(74,55,40,0.1);
+  border: 1.5px solid #f0e4da;
+}
+
+/* ── Spinner ──────────────────────────────────────────────────────────────── */
+.spinner-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 3rem; }
+.spinner { width: 34px; height: 34px; border-radius: 50%; border: 3px solid #f0d8cc; border-top-color: #c26b8e; animation: spin 0.75s linear infinite; }
+
+/* ── Modal overlay ────────────────────────────────────────────────────────── */
+.overlay {
+  position: fixed; inset: 0; background: rgba(74,55,40,0.48);
+  z-index: 900; display: none; align-items: flex-end; justify-content: center;
+}
+.overlay.open { display: flex; }
+.sheet {
+  width: 100%; max-width: 520px; background: #fdf8f2;
+  border-radius: 24px 24px 0 0; padding: 1.75rem 1.75rem 2.25rem;
+  max-height: 92vh; overflow-y: auto;
+  animation: slideUp 0.3s ease;
+}
+.sheet-handle { width: 40px; height: 4px; background: #e0cfc4; border-radius: 4px; margin: 0 auto 1.5rem; }
+
+/* ── Player picker ────────────────────────────────────────────────────────── */
+#screen-player { justify-content: center; background: linear-gradient(160deg,#fdf8f2 0%,#fce8ee 100%); padding: 2rem; }
+.player-btn {
+  width: 100%; max-width: 340px; padding: 1.5rem 2rem;
+  border-radius: 22px; border: 2px solid transparent;
+  background: #fff; box-shadow: 0 6px 32px rgba(74,55,40,0.12);
+  font-size: 1.35rem; font-weight: 700; color: #4a3728;
+  margin-bottom: 1rem; transition: all 0.18s;
+}
+.player-btn:hover { border-color: #d4789a; background: #fff8fb; transform: translateY(-2px) scale(1.01); }
+.player-btn .sub { font-size: 12px; color: #b08898; font-weight: 400; display: block; margin-top: 3px; }
+
+/* ── Home screen ──────────────────────────────────────────────────────────── */
+#screen-home { background: linear-gradient(160deg,#fdf8f2 0%,#fce8ee 60%,#fdf0e0 100%); padding: 2rem 1.5rem 3rem; }
+.home-inner { width: 100%; max-width: 400px; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.75rem; }
+.stat-card { background: #fff; border-radius: 18px; padding: 1.1rem 1.25rem; box-shadow: 0 3px 16px rgba(74,55,40,0.09); border: 1.5px solid #f0e4da; }
+.stat-card .emoji { font-size: 20px; margin-bottom: 4px; }
+.stat-card .value { font-family: 'Playfair Display',serif; font-size: 26px; color: #4a3728; line-height: 1; }
+.stat-card .label { font-size: 10.5px; color: #b08898; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 3px; }
+.who-badge { background: #fff; border-radius: 18px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; border: 1.5px solid #f0e4da; display: flex; align-items: center; gap: 10px; }
+.who-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg,#d4789a,#c26b8e); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 15px; font-weight: 700; flex-shrink: 0; }
+.who-label { font-size: 11px; color: #c28898; letter-spacing: 1px; text-transform: uppercase; }
+.who-name  { font-size: 15px; font-weight: 600; color: #4a3728; }
+
+/* ── Swipe screen ─────────────────────────────────────────────────────────── */
+#screen-swipe { background: linear-gradient(160deg,#fdf8f2 0%,#fce8ee 100%); }
+.swipe-header { width: 100%; max-width: 400px; display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem 0; }
+.progress-bar { width: calc(100% - 3rem); max-width: 370px; height: 3px; background: #f0ddd4; border-radius: 3px; margin: 0.875rem 1.5rem 0; }
+.progress-fill { height: 100%; background: linear-gradient(90deg,#d4789a,#c26b8e); border-radius: 3px; transition: width 0.3s ease; }
+.card-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 400px; padding: 1rem 1.5rem; }
+.card-stack { position: relative; width: 100%; height: 490px; display: flex; align-items: center; justify-content: center; }
+
+/* ── Swipe card ───────────────────────────────────────────────────────────── */
+.swipe-card {
+  position: absolute; width: 100%; max-width: 340px; height: 480px;
+  border-radius: 24px; background: #fdf8f2;
+  border: 1.5px solid rgba(200,170,150,0.2);
+  user-select: none; touch-action: none;
+  will-change: transform;
+}
+.swipe-card.is-top { cursor: grab; box-shadow: 0 12px 52px rgba(74,55,40,0.18); }
+.swipe-card.is-top:active { cursor: grabbing; }
+.swipe-card .card-front, .swipe-card .card-back { padding: 1.75rem; height: 100%; display: flex; flex-direction: column; }
+.swipe-card .card-back { display: none; }
+.swipe-card.flipped .card-front { display: none; }
+.swipe-card.flipped .card-back  { display: flex; }
+.vote-stamp {
+  position: absolute; top: 24px; padding: 5px 14px;
+  border-radius: 8px; font-size: 18px; font-weight: 700; letter-spacing: 2px;
+  font-family: 'Playfair Display',serif; pointer-events: none; opacity: 0;
+  transition: opacity 0.05s;
+}
+.stamp-like  { left: 20px;  border: 3px solid #7fb87a; color: #7fb87a; transform: rotate(-14deg); }
+.stamp-pass  { right: 20px; border: 3px solid #e07070; color: #e07070; transform: rotate(14deg); }
+.name-center { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 0.5rem 0; }
+.divider     { width: 40px; height: 1px; background: #e0c8b8; }
+.name-big    { font-family: 'Playfair Display',serif; font-style: italic; font-size: clamp(2.8rem,12vw,3.8rem); color: #4a3728; line-height: 1.05; margin: 20px 0 14px; }
+.name-meaning { font-size: 13px; color: #9a8678; line-height: 1.65; max-width: 250px; }
+.flip-btn { background: none; border: 1px solid #e0cfc4; border-radius: 100px; padding: 7px 16px; color: #9a8678; font-size: 12px; display: flex; align-items: center; gap: 6px; margin: 0 auto; }
+
+/* ── Vote buttons ─────────────────────────────────────────────────────────── */
+.vote-btns { display: flex; gap: 24px; margin-top: 8px; align-items: center; }
+.vote-pass { width: 60px; height: 60px; border-radius: 50%; border: 2px solid #f0c4c4; background: #fff; font-size: 22px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(224,112,112,0.2); }
+.vote-like { width: 72px; height: 72px; border-radius: 50%; border: none; background: linear-gradient(135deg,#d4789a,#c26b8e); font-size: 26px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 24px rgba(194,107,142,0.45); }
+.vote-spacer { width: 60px; }
+
+/* ── Matches screen ───────────────────────────────────────────────────────── */
+#screen-matches { background: #fdf8f2; padding-bottom: 3rem; align-items: stretch; }
+.matches-header { background: linear-gradient(160deg,#fce8ee 0%,#fdf8f2 100%); padding: 1.5rem 1.5rem 1.25rem; margin-bottom: 1.5rem; }
+.match-card { background: #fff; border-radius: 18px; padding: 1.25rem 1.5rem; box-shadow: 0 3px 16px rgba(74,55,40,0.09); border: 1.5px solid #f0e0d8; animation: fadeUp 0.4s ease both; margin-bottom: 12px; }
+.match-badge { background: #fce8f0; border-radius: 12px; padding: 4px 10px; font-size: 12px; color: #c26b8e; font-weight: 600; white-space: nowrap; }
+.likes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 2.5rem; }
+.likes-col { background: #fff; border-radius: 16px; padding: 1rem; box-shadow: 0 2px 12px rgba(74,55,40,0.08); }
+.likes-label { font-size: 11px; color: #c28898; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+.likes-name { font-family: 'Playfair Display',serif; font-style: italic; font-size: 15px; color: #4a3728; margin-bottom: 4px; }
+
+/* ── Match celebration ────────────────────────────────────────────────────── */
+#match-celebration {
+  position: fixed; inset: 0; z-index: 9999; display: none;
+  background: radial-gradient(ellipse at center,#fff5f8 0%,#fde8f0 60%,#fdf0e8 100%);
+  align-items: center; justify-content: center; overflow: hidden;
+}
+#match-celebration.show { display: flex; }
+.match-popup {
+  animation: popIn 0.85s cubic-bezier(0.34,1.56,0.64,1) both;
+  text-align: center; padding: 2.5rem 3rem; max-width: 400px; width: 90%;
+  background: rgba(255,255,255,0.88); backdrop-filter: blur(16px);
+  border-radius: 28px; box-shadow: 0 16px 64px rgba(194,107,142,0.28);
+}
+.match-heart { font-size: 64px; animation: pulse 1.5s ease-in-out infinite; margin-bottom: 12px; }
+
+/* ── Culture grid ─────────────────────────────────────────────────────────── */
+.culture-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1rem; }
+.culture-btn {
+  padding: 10px 14px; border-radius: 12px; border: 1.5px solid #e8d8cc;
+  background: #fff; color: #4a3728; font-size: 12.5px; cursor: pointer;
+  text-align: left; transition: all 0.15s;
+}
+.culture-btn.selected { border-color: #c26b8e; background: #fce8f0; color: #c26b8e; font-weight: 600; }
+.culture-btn.custom.selected { border-color: #c9a84c; background: #fdf4e0; color: #9a7a2c; }
+.gender-pills { display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.gender-pill  { padding: 7px 16px; border-radius: 100px; border: 1.5px solid #e0cfc4; background: #fff; color: #9a8678; font-size: 13px; cursor: pointer; font-weight: 400; transition: all 0.15s; }
+.gender-pill.selected { border-color: #c26b8e; background: #fce8f0; color: #c26b8e; font-weight: 600; }
+
+/* ── Back/nav buttons ─────────────────────────────────────────────────────── */
+.back-btn { background: none; border: none; color: #9a8678; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+
+/* ── Text helpers ─────────────────────────────────────────────────────────── */
+.label-tiny { font-size: 11px; color: #b08898; letter-spacing: 0.5px; display: block; margin-bottom: 5px; }
+.label-caps { font-size: 11px; color: #c28898; letter-spacing: 3px; text-transform: uppercase; }
+.muted { color: #b08898; }
+.text-sm { font-size: 13px; }
+.text-xs { font-size: 11px; }
+.gap { margin-bottom: 1rem; }
+.actions { display: flex; flex-direction: column; gap: 10px; }
+
+/* ── Toast ────────────────────────────────────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px);
+  background: #4a3728; color: #fff; padding: 10px 20px; border-radius: 100px;
+  font-size: 14px; transition: transform 0.3s ease; z-index: 8000; white-space: nowrap;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ─── Config ───────────────────────────────────────────────────────────── -->
+<script>
+  // ↓↓↓ Paste your Apps Script deployment URL here ↓↓↓
+  const SCRIPT_URL = "YOUR_APPS_SCRIPT_URL_HERE";
+</script>
+
+<!-- ─── Toast ────────────────────────────────────────────────────────────── -->
+<div id="toast"></div>
+
+<!-- ─── Match celebration ────────────────────────────────────────────────── -->
+<div id="match-celebration">
+  <div id="match-confetti"></div>
+  <div class="match-popup">
+    <div class="match-heart">💞</div>
+    <p class="label-caps" style="margin-bottom:6px">It's a Match!</p>
+    <h1 class="serif italic" id="match-name" style="font-size:clamp(3rem,14vw,5rem);color:#4a3728;line-height:1;margin-bottom:8px"></h1>
+    <p class="muted text-sm" style="margin-bottom:32px">You both love this name 💕</p>
+    <button class="btn btn-primary" style="padding:14px 40px" onclick="dismissMatch()">Keep Exploring ✨</button>
+  </div>
+</div>
+
+<!-- ─── Loading ───────────────────────────────────────────────────────────── -->
+<div class="screen active" id="screen-loading">
+  <div class="spinner-wrap" style="margin:auto">
+    <div class="spinner"></div>
+    <p class="muted text-sm">Loading…</p>
+  </div>
+</div>
+
+<!-- ─── Player picker ─────────────────────────────────────────────────────── -->
+<div class="screen" id="screen-player">
+  <div style="text-align:center;margin-bottom:2.5rem;animation:fadeUp 0.6s ease both">
+    <div style="font-size:52px;margin-bottom:14px">🌸</div>
+    <h1 class="serif italic" style="font-size:clamp(2rem,9vw,3rem);margin-bottom:8px">Baby Name Swiper</h1>
+    <p class="muted">Who's swiping right now?</p>
+  </div>
+  <button class="player-btn fade-up" id="player-btn-p1" onclick="selectPlayer('p1')">
+    <span id="player-label-p1">Partner 1</span>
+    <span class="sub">Tap to start swiping as you</span>
+  </button>
+  <button class="player-btn fade-up" id="player-btn-p2" onclick="selectPlayer('p2')" style="animation-delay:0.08s">
+    <span id="player-label-p2">Partner 2</span>
+    <span class="sub">Tap to start swiping as you</span>
+  </button>
+</div>
+
+<!-- ─── Home ──────────────────────────────────────────────────────────────── -->
+<div class="screen" id="screen-home">
+  <div class="home-inner">
+    <div class="center fade-up" style="margin-bottom:2rem;padding-top:2rem">
+      <div style="font-size:38px;margin-bottom:10px">🌸</div>
+      <h1 class="serif italic" style="font-size:28px;margin-bottom:4px">Baby Name Swiper</h1>
+      <p class="muted text-sm" id="home-subtitle">0 matches so far</p>
+    </div>
+
+    <div class="who-badge fade-up" style="animation-delay:0.05s">
+      <div class="who-avatar" id="home-avatar">R</div>
+      <div>
+        <div class="who-label">Swiping as</div>
+        <div class="who-name" id="home-playername">Ravi</div>
+      </div>
+    </div>
+
+    <div class="stats-grid fade-up" id="stats-grid" style="animation-delay:0.1s">
+      <div class="stat-card"><div class="emoji">📚</div><div class="value" id="stat-total">0</div><div class="label">Names in pool</div></div>
+      <div class="stat-card"><div class="emoji">🃏</div><div class="value" id="stat-unseen">0</div><div class="label">Yet to swipe</div></div>
+      <div class="stat-card"><div class="emoji">💞</div><div class="value" id="stat-matches">0</div><div class="label">Matches</div></div>
+      <div class="stat-card"><div class="emoji">❤️</div><div class="value" id="stat-likes">0</div><div class="label">Your likes</div></div>
+    </div>
+
+    <div class="actions fade-up" style="animation-delay:0.15s;padding-bottom:3rem">
+      <button class="btn btn-primary btn-full" id="home-swipe-btn" onclick="goSwipe()">Start Swiping →</button>
+      <div class="btn-grid">
+        <button class="btn btn-secondary" onclick="goMatches()">💞 Matches</button>
+        <button class="btn btn-secondary" onclick="openCultureModal()">🌍 Load Names</button>
+      </div>
+      <div class="btn-grid">
+        <button class="btn btn-ghost" onclick="openAddModal()">✏️ Add a Name</button>
+        <button class="btn btn-ghost" onclick="exportCSV()">📥 Export CSV</button>
+      </div>
+      <button class="back-btn" style="margin:4px auto 0;justify-content:center;font-size:12px;color:#c0a898" onclick="goBack('screen-player')">↩ Switch player</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Swipe ──────────────────────────────────────────────────────────────── -->
+<div class="screen" id="screen-swipe">
+  <div class="swipe-header">
+    <button class="back-btn" onclick="goBack('screen-home')">← Home</button>
+    <span class="muted text-sm" id="swipe-whose-turn"></span>
+    <span class="text-sm" style="color:#c26b8e;font-weight:600">💞 <span id="swipe-match-count">0</span></span>
+  </div>
+  <div class="progress-bar" style="width:calc(100% - 3rem);max-width:370px;margin:.875rem 1.5rem 0">
+    <div class="progress-fill" id="swipe-progress" style="width:0%"></div>
+  </div>
+  <p class="text-xs muted" style="margin-top:6px" id="swipe-remaining">0 names remaining</p>
+  <div class="card-area">
+    <div class="card-stack" id="card-stack">
+      <!-- cards injected by JS -->
+    </div>
+    <div class="vote-btns">
+      <button class="vote-pass" onclick="castVote('pass')">👋</button>
+      <button class="vote-like" onclick="castVote('like')">❤️</button>
+      <div class="vote-spacer"></div>
+    </div>
+    <p class="text-xs" style="color:#c8b4a8;margin-top:10px">Drag or tap · flip for origin story</p>
+  </div>
+  <!-- All-done state -->
+  <div id="swipe-done" style="display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;animation:fadeUp 0.5s ease both">
+    <div style="font-size:52px;margin-bottom:16px">🎉</div>
+    <h2 class="serif italic" style="font-size:26px;margin-bottom:8px">All caught up!</h2>
+    <p class="muted text-sm" style="margin-bottom:28px">You've swiped through everything. Load more?</p>
+    <button class="btn btn-primary" onclick="openCultureModal()">Load More Names ✨</button>
+  </div>
+</div>
+
+<!-- ─── Matches ───────────────────────────────────────────────────────────── -->
+<div class="screen" id="screen-matches">
+  <div class="matches-header" style="width:100%">
+    <button class="back-btn" onclick="goBack('screen-home')" style="margin-bottom:1rem">← Home</button>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between">
+      <div>
+        <h1 class="serif italic" style="font-size:28px">Matches 💞</h1>
+        <p class="muted text-sm" id="matches-subtitle" style="margin-top:2px">0 names you both love</p>
+      </div>
+      <button class="btn btn-ghost" style="font-size:12px;padding:9px 16px" onclick="exportCSV()">📥 CSV</button>
+    </div>
+  </div>
+  <div style="padding:0 1.5rem;max-width:520px;width:100%;margin:0 auto;padding-bottom:3rem">
+    <div id="matches-list"></div>
+    <div class="likes-grid" id="likes-grid"></div>
+  </div>
+</div>
+
+<!-- ─── Culture modal ─────────────────────────────────────────────────────── -->
+<div class="overlay" id="overlay-culture" onclick="if(event.target===this)closeCultureModal()">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2 class="serif" style="font-size:22px;margin-bottom:4px">Load Names</h2>
+    <p class="muted text-sm" style="margin-bottom:1.5rem">Pick a cultural background · Claude generates 15 names with origin stories</p>
+    <div class="gender-pills" id="gender-pills"></div>
+    <div class="culture-grid" id="culture-grid"></div>
+    <input id="custom-culture-input" type="text" placeholder="e.g. Haitian Creole, Basque, Māori…" style="display:none;width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid #e0cfc4;background:#fff;font-size:14px;color:#4a3728;margin-bottom:1rem" />
+    <div style="display:flex;gap:10px;margin-top:0.5rem">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeCultureModal()">Cancel</button>
+      <button class="btn btn-primary" id="culture-submit-btn" style="flex:2" onclick="submitCulture()">Generate Names ✨</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Add name modal ────────────────────────────────────────────────────── -->
+<div class="overlay" id="overlay-add" onclick="if(event.target===this)closeAddModal()">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2 class="serif" style="font-size:22px;margin-bottom:4px">Add a Name</h2>
+    <p class="muted text-sm" style="margin-bottom:1.5rem">Claude will fill in the origin story automatically</p>
+    <label class="label-tiny">NAME</label>
+    <input id="add-name-input" type="text" placeholder="Enter a baby name…" style="width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid #ede0d8;background:#fff;font-size:16px;color:#4a3728;margin-bottom:1rem" />
+    <label class="label-tiny">GENDER</label>
+    <div style="display:flex;gap:8px;margin-bottom:1.5rem" id="add-gender-pills"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeAddModal()">Cancel</button>
+      <button class="btn btn-primary" id="add-submit-btn" style="flex:2" onclick="submitAddName()">Add Name ✨</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── App logic ─────────────────────────────────────────────────────────── -->
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let state = {
+  names:   [],    // [{ id, name, gender, culture, meaning, origin, votes:{p1,p2} }]
+  players: { p1: 'Partner 1', p2: 'Partner 2' },
+  current: null,  // 'p1' | 'p2'
+  swipeIdx: 0,
+  cultureSel: '',
+  genderSel: 'All',
+  addGender: 'Neutral',
+};
+
+const CULTURES = [
+  'English / Anglo-Saxon','French','Irish / Celtic','Italian',
+  'Spanish / Latin','Japanese','Hebrew / Jewish','Arabic',
+  'Scandinavian / Norse','Ancient Greek','Indian / Sanskrit',
+  'Chinese','African / Swahili','Slavic / Eastern European',
+  'Persian','Welsh / Cornish','Native American','Portuguese / Brazilian',
+];
+const GENDERS = ['All','Boy','Girl','Gender-neutral'];
+const GENDER_COLORS = { Boy:'#7ab8e0', Girl:'#e07aa8', Neutral:'#9b8ed4' };
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function api(method, body) {
+  const opts = { method, headers:{'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  const url = method === 'GET' ? SCRIPT_URL + '?action=getAll' : SCRIPT_URL;
+  const r = await fetch(url, opts);
+  const d = await r.json();
+  if (d.error) throw new Error(d.error);
+  return d;
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+(async function init() {
+  buildCultureGrid();
+  buildGenderPills();
+  buildAddGenderPills();
+
+  try {
+    const data = await api('GET');
+    state.names   = data.names   || [];
+    state.players = data.players || state.players;
+    // Update player button labels
+    document.getElementById('player-label-p1').textContent = state.players.p1;
+    document.getElementById('player-label-p2').textContent = state.players.p2;
+    // Restore session
+    const saved = localStorage.getItem('bns-player');
+    if (saved === 'p1' || saved === 'p2') {
+      state.current = saved;
+      showScreen('screen-home');
+      refreshHome();
+    } else {
+      showScreen('screen-player');
+    }
+  } catch(e) {
+    showScreen('screen-player');
+    toast('⚠️ Could not reach the server. Check SCRIPT_URL in index.html.');
+    console.error(e);
+  }
+})();
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goBack(id) { showScreen(id); if(id==='screen-home') refreshHome(); }
+
+function selectPlayer(p) {
+  state.current = p;
+  localStorage.setItem('bns-player', p);
+  refreshHome();
+  showScreen('screen-home');
+}
+
+// ── Home ──────────────────────────────────────────────────────────────────────
+function refreshHome() {
+  const p   = state.current;
+  const pn  = state.players[p];
+  const matches = getMatches();
+  const queue   = getQueue();
+  const likes   = state.names.filter(n => (n.votes[p]||'') === 'like');
+
+  document.getElementById('home-subtitle').textContent    = matches.length + ' match' + (matches.length!==1?'es':'') + ' so far';
+  document.getElementById('home-playername').textContent  = pn;
+  document.getElementById('home-avatar').textContent      = pn[0].toUpperCase();
+  document.getElementById('stat-total').textContent       = state.names.length;
+  document.getElementById('stat-unseen').textContent      = queue.length;
+  document.getElementById('stat-matches').textContent     = matches.length;
+  document.getElementById('stat-likes').textContent       = likes.length;
+  document.getElementById('home-swipe-btn').textContent   = queue.length === 0 ? 'Load Names to Start ✨' : 'Start Swiping →';
+}
+
+function getQueue() {
+  const p      = state.current;
+  const other  = p === 'p1' ? 'p2' : 'p1';
+  const unseen = state.names.filter(n => !(n.votes[p] || ''));
+
+  const liked  = shuffle(unseen.filter(n => n.votes[other] === 'like'));
+  const fresh  = shuffle(unseen.filter(n => !n.votes[other]));
+  const passed = shuffle(unseen.filter(n => n.votes[other] === 'pass'));
+
+  // Interleave: inject one partner-liked name for every 2 net-new names.
+  // This guarantees all liked names surface early, but their exact position
+  // is unpredictable so it still feels natural.
+  const INTERVAL = 2;
+  const mixed = [];
+  let li = 0, fi = 0;
+  while (fi < fresh.length || li < liked.length) {
+    for (let i = 0; i < INTERVAL && fi < fresh.length; i++) mixed.push(fresh[fi++]);
+    if (li < liked.length) mixed.push(liked[li++]);
+  }
+
+  return [...mixed, ...passed];
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function getMatches() { return state.names.filter(n => n.votes.p1==='like' && n.votes.p2==='like'); }
+
+// ── Swipe ─────────────────────────────────────────────────────────────────────
+function goSwipe() {
+  const queue = getQueue();
+  if (queue.length === 0) { openCultureModal(); return; }
+  state.swipeIdx = 0;
+  renderSwipeScreen();
+  showScreen('screen-swipe');
+}
+
+function renderSwipeScreen() {
+  const queue   = getQueue();
+  const matches = getMatches();
+  const pn = state.players[state.current];
+
+  document.getElementById('swipe-whose-turn').textContent = pn + "'s turn";
+  document.getElementById('swipe-match-count').textContent = matches.length;
+  document.getElementById('swipe-done').style.display = 'none';
+  document.querySelector('#screen-swipe .card-area').style.display = 'flex';
+
+  renderCardStack();
+  updateSwipeProgress();
+}
+
+function updateSwipeProgress() {
+  const queue = getQueue();
+  const total = queue.length + state.swipeIdx;
+  const pct   = total ? (state.swipeIdx / total) * 100 : 0;
+  document.getElementById('swipe-progress').style.width = pct + '%';
+  const rem = queue.length - state.swipeIdx;
+  document.getElementById('swipe-remaining').textContent = Math.max(0,rem) + ' name' + (rem!==1?'s':'') + ' remaining';
+}
+
+function renderCardStack() {
+  const stack = document.getElementById('card-stack');
+  stack.innerHTML = '';
+  const queue = getQueue();
+  const slice = queue.slice(state.swipeIdx, state.swipeIdx + 3);
+
+  if (slice.length === 0) {
+    showDone(); return;
+  }
+
+  // Render back-to-front so top card is last in DOM (highest z)
+  [...slice].reverse().forEach((name, revIdx) => {
+    const depth = slice.length - 1 - revIdx; // 0=top
+    const card  = buildCard(name, depth);
+    stack.appendChild(card);
+  });
+  initTopCardDrag();
+}
+
+function buildCard(name, depth) {
+  const card = document.createElement('div');
+  card.className = 'swipe-card' + (depth===0?' is-top':'');
+  card.dataset.id = name.id;
+
+  const gc = GENDER_COLORS[name.gender] || '#9b8ed4';
+  if (depth > 0) {
+    card.style.transform = `translateY(${depth*-7}px) scale(${1-depth*0.045})`;
+    card.style.zIndex = 10-depth;
+  } else {
+    card.style.zIndex = 10;
+  }
+
+  card.innerHTML = `
+    <div class="vote-stamp stamp-like">LOVE ❤️</div>
+    <div class="vote-stamp stamp-pass">NOPE 👋</div>
+    <div class="card-front">
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <span class="pill" style="background:#f4e8d0;color:#9a7860;font-size:10px;text-transform:uppercase;letter-spacing:.6px">${name.culture}</span>
+        <span class="pill" style="background:${gc}22;color:${gc};font-size:10px">${genderEmoji(name.gender)} ${name.gender}</span>
+      </div>
+      <div class="name-center">
+        <div class="divider"></div>
+        <div class="name-big">${name.name}</div>
+        <p class="name-meaning">${name.meaning}</p>
+        <div class="divider"></div>
+      </div>
+      <button class="flip-btn" onclick="flipCard(this)">📖 See origin story</button>
+    </div>
+    <div class="card-back">
+      <button style="background:none;border:none;color:#9a8678;font-size:12px;text-align:left;padding:0;margin-bottom:1rem;cursor:pointer" onclick="unflipCard(this)">← Back</button>
+      <div class="serif italic" style="font-size:28px;color:#4a3728;margin-bottom:6px">${name.name}</div>
+      <div style="width:32px;height:2px;background:#c9a84c;margin-bottom:16px"></div>
+      <p style="font-size:14px;color:#5a4a3f;line-height:1.8;flex:1;overflow-y:auto">${name.origin}</p>
+      <div style="background:#f4e8d0;border-radius:12px;padding:10px 14px;margin-top:12px;font-size:13px;color:#7a6a5f;line-height:1.5">
+        <strong style="color:#4a3728">Meaning:</strong> ${name.meaning}
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function flipCard(btn) {
+  btn.closest('.swipe-card').classList.add('flipped');
+}
+function unflipCard(btn) {
+  btn.closest('.swipe-card').classList.remove('flipped');
+}
+function genderEmoji(g) {
+  return g==='Boy'?'♂':g==='Girl'?'♀':'⚧';
+}
+
+// ── Drag logic ────────────────────────────────────────────────────────────────
+let drag = { active:false, startX:0, card:null };
+
+function initTopCardDrag() {
+  const card = document.querySelector('.swipe-card.is-top');
+  if (!card) return;
+
+  const onStart = x => { drag.active=true; drag.startX=x; drag.card=card; };
+  const onMove  = x => {
+    if (!drag.active) return;
+    const dx = x - drag.startX;
+    card.style.transform = `translateX(${dx}px) rotate(${dx*0.07}deg)`;
+    card.style.transition = 'none';
+    card.querySelector('.stamp-like').style.opacity = Math.min(1, Math.max(0, dx/80));
+    card.querySelector('.stamp-pass').style.opacity = Math.min(1, Math.max(0, -dx/80));
+  };
+  const onEnd = x => {
+    if (!drag.active) return;
+    drag.active = false;
+    const dx = x - drag.startX;
+    card.style.transition = '';
+    if      (dx >  95) flyOut(card, 'right');
+    else if (dx < -95) flyOut(card, 'left');
+    else { card.style.transform = ''; card.querySelector('.stamp-like').style.opacity=0; card.querySelector('.stamp-pass').style.opacity=0; }
+  };
+
+  card.addEventListener('mousedown',  e => onStart(e.clientX));
+  card.addEventListener('mousemove',  e => { if(drag.active) onMove(e.clientX); });
+  card.addEventListener('mouseup',    e => onEnd(e.clientX));
+  card.addEventListener('mouseleave', e => { if(drag.active) onEnd(e.clientX); });
+  card.addEventListener('touchstart', e => onStart(e.touches[0].clientX), {passive:true});
+  card.addEventListener('touchmove',  e => { e.preventDefault(); onMove(e.touches[0].clientX); }, {passive:false});
+  card.addEventListener('touchend',   e => onEnd(e.changedTouches[0].clientX));
+}
+
+function flyOut(card, dir) {
+  card.style.transform = dir==='right'
+    ? 'translateX(150%) rotate(28deg)'
+    : 'translateX(-150%) rotate(-28deg)';
+  card.style.opacity = '0';
+  setTimeout(() => doVote(dir==='right'?'like':'pass'), 280);
+}
+
+function castVote(v) {
+  const card = document.querySelector('.swipe-card.is-top');
+  if (card) flyOut(card, v==='like'?'right':'left');
+}
+
+async function doVote(vote) {
+  const queue  = getQueue();
+  const name   = queue[state.swipeIdx];
+  if (!name) return;
+
+  const p = state.current;
+  // Optimistic update
+  name.votes[p] = vote;
+  state.swipeIdx++;
+
+  // Check match
+  if (vote==='like' && name.votes[p==='p1'?'p2':'p1']==='like') {
+    showMatch(name);
+  }
+
+  renderCardStack();
+  updateSwipeProgress();
+  updateMatchCount();
+  refreshHome();
+
+  // Persist to Sheet
+  try {
+    await api('POST', { action:'vote', player:p, nameId:name.id, vote });
+  } catch(e) {
+    toast('⚠️ Vote may not have saved. Check connection.');
+    console.error(e);
+  }
+}
+
+function updateMatchCount() {
+  document.getElementById('swipe-match-count').textContent = getMatches().length;
+}
+
+function showDone() {
+  document.querySelector('#screen-swipe .card-area').style.display = 'none';
+  document.getElementById('swipe-done').style.display = 'flex';
+}
+
+// ── Match celebration ─────────────────────────────────────────────────────────
+function showMatch(name) {
+  const cel = document.getElementById('match-celebration');
+  document.getElementById('match-name').textContent = name.name;
+
+  // Confetti
+  const EMOJIS = ['💕','🌸','✨','💗','🌷','🎀','💖','⭐','🌼','🍀','🥂','🫧'];
+  const conf = document.getElementById('match-confetti');
+  conf.innerHTML = '';
+  for (let i=0; i<42; i++) {
+    const s = document.createElement('span');
+    s.textContent = EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
+    const r = -70+Math.random()*140;
+    s.style.cssText = `position:absolute;left:${Math.random()*100}%;bottom:${-10+Math.random()*20}%;font-size:${10+Math.random()*34}px;--r:${r}deg;animation:floatUp ${1.2+Math.random()*3}s ease-out ${Math.random()*1.4}s both;pointer-events:none;`;
+    conf.appendChild(s);
+  }
+  cel.classList.add('show');
+}
+function dismissMatch() {
+  document.getElementById('match-celebration').classList.remove('show');
+}
+
+// ── Matches screen ────────────────────────────────────────────────────────────
+function goMatches() {
+  const matches = getMatches();
+  const p1likes = state.names.filter(n => n.votes.p1==='like');
+  const p2likes = state.names.filter(n => n.votes.p2==='like');
+
+  document.getElementById('matches-subtitle').textContent = matches.length + ' name' + (matches.length!==1?'s':'') + ' you both love';
+
+  const list = document.getElementById('matches-list');
+  list.innerHTML = matches.length === 0
+    ? `<div style="text-align:center;padding:3rem 1rem">
+        <div style="font-size:48px;margin-bottom:14px">🌸</div>
+        <h2 class="serif italic" style="font-size:22px;color:#4a3728;margin-bottom:8px">No matches yet</h2>
+        <p class="muted text-sm">Keep swiping — the perfect name is out there!</p>
+       </div>`
+    : matches.map(n => `
+        <div class="match-card">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+            <div>
+              <h3 class="serif italic" style="font-size:26px;color:#4a3728;line-height:1;margin-bottom:3px">${n.name}</h3>
+              <p style="font-size:12px;color:#b08898">${n.culture} · ${n.gender}${n.addedBy ? ' · ✏️ added by ' + n.addedBy : ''}</p>
+            </div>
+            <span class="match-badge">💞 Match</span>
+          </div>
+          <p style="font-size:13px;color:#7a6a5f;line-height:1.65">${n.origin}</p>
+        </div>`).join('');
+
+  const grid = document.getElementById('likes-grid');
+  grid.innerHTML = ['p1','p2'].map(p => {
+    const likes = p==='p1'?p1likes:p2likes;
+    const pn = state.players[p];
+    return `<div class="likes-col">
+      <div class="likes-label">${pn}'s ❤️s</div>
+      ${likes.length===0
+        ? '<p style="font-size:12px;color:#d0c0b8">None yet</p>'
+        : likes.map(n=>`<div class="likes-name">${n.name}</div>`).join('')}
+    </div>`;
+  }).join('');
+
+  showScreen('screen-matches');
+}
+
+// ── Culture modal ─────────────────────────────────────────────────────────────
+function buildCultureGrid() {
+  const grid = document.getElementById('culture-grid');
+  grid.innerHTML = CULTURES.map(c => `
+    <button class="culture-btn" data-culture="${c}" onclick="selectCulture('${c}')">${c}</button>
+  `).join('') + `<button class="culture-btn custom" data-culture="__custom__" onclick="selectCulture('__custom__')">✏️ Custom…</button>`;
+}
+
+function buildGenderPills() {
+  const wrap = document.getElementById('gender-pills');
+  wrap.innerHTML = GENDERS.map(g => `
+    <button class="gender-pill${g==='All'?' selected':''}" onclick="selectGender('${g}')">${g}</button>
+  `).join('');
+}
+
+function selectCulture(c) {
+  state.cultureSel = c;
+  document.querySelectorAll('.culture-btn').forEach(b => b.classList.toggle('selected', b.dataset.culture===c));
+  const inp = document.getElementById('custom-culture-input');
+  inp.style.display = c==='__custom__' ? 'block' : 'none';
+}
+
+function selectGender(g) {
+  state.genderSel = g;
+  document.querySelectorAll('.gender-pill').forEach(b => b.classList.toggle('selected', b.textContent===g));
+}
+
+function openCultureModal()  { document.getElementById('overlay-culture').classList.add('open'); }
+function closeCultureModal() { document.getElementById('overlay-culture').classList.remove('open'); }
+
+async function submitCulture() {
+  let culture = state.cultureSel;
+  if (!culture) { toast('Pick a cultural background first'); return; }
+  if (culture === '__custom__') {
+    culture = document.getElementById('custom-culture-input').value.trim();
+    if (!culture) { toast('Enter a custom culture name'); return; }
+  }
+  const btn = document.getElementById('culture-submit-btn');
+  btn.textContent = 'Generating…'; btn.disabled = true;
+  closeCultureModal();
+  toast('🌱 Generating names…');
+  try {
+    const data = await api('POST', { action:'generateNames', culture, gender:state.genderSel });
+    data.added.forEach(n => state.names.push(n));
+    toast('✨ Added ' + data.added.length + ' names!');
+    refreshHome();
+    goSwipe();
+  } catch(e) {
+    toast('Error: ' + e.message);
+    console.error(e);
+  }
+  btn.textContent = 'Generate Names ✨'; btn.disabled = false;
+}
+
+// ── Add name modal ─────────────────────────────────────────────────────────────
+function buildAddGenderPills() {
+  const wrap = document.getElementById('add-gender-pills');
+  const opts = ['Boy','Girl','Neutral'];
+  wrap.innerHTML = opts.map(g => {
+    const gc = GENDER_COLORS[g];
+    return `<button class="gender-pill${g==='Neutral'?' selected':''}" style="flex:1;${g===state.addGender?`border-color:${gc};background:${gc}18;color:${gc};font-weight:600`:''}" onclick="selectAddGender('${g}')">${genderEmoji(g)} ${g}</button>`;
+  }).join('');
+}
+
+function selectAddGender(g) {
+  state.addGender = g;
+  buildAddGenderPills();
+}
+
+function openAddModal()  { document.getElementById('overlay-add').classList.add('open'); }
+function closeAddModal() { document.getElementById('overlay-add').classList.remove('open'); }
+
+async function submitAddName() {
+  const name = document.getElementById('add-name-input').value.trim();
+  if (!name) return;
+  const btn = document.getElementById('add-submit-btn');
+  btn.textContent = 'Adding…'; btn.disabled = true;
+  closeAddModal();
+  toast('🔍 Looking up ' + name + '…');
+  try {
+    const data = await api('POST', { action:'addCustomName', name, gender:state.addGender, addedBy: state.players[state.current] });
+    state.names.push(data.name);
+    toast('✨ Added ' + name + '!');
+    refreshHome();
+    document.getElementById('add-name-input').value = '';
+  } catch(e) {
+    toast('Error: ' + e.message);
+  }
+  btn.textContent = 'Add Name ✨'; btn.disabled = false;
+}
+
+// ── Export CSV ────────────────────────────────────────────────────────────────
+function exportCSV() {
+  const p1 = state.players.p1;
+  const p2 = state.players.p2;
+  const header = ['Name','Gender','Culture','Meaning','Origin',p1+' Vote',p2+' Vote','Match'];
+  const rows = state.names.map(n => [
+    n.name, n.gender, n.culture,
+    '"'+(n.meaning||'').replace(/"/g,'""')+'"',
+    '"'+(n.origin||'').replace(/"/g,'""')+'"',
+    n.votes.p1||'unseen', n.votes.p2||'unseen',
+    (n.votes.p1==='like'&&n.votes.p2==='like')?'YES':'',
+  ]);
+  const csv = [header,...rows].map(r=>r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'baby-names.csv';
+  a.click();
+  toast('📥 CSV downloaded!');
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
