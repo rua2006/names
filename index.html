@@ -227,7 +227,7 @@ input:focus { outline: none; }
 <!-- ─── Config ───────────────────────────────────────────────────────────── -->
 <script>
   // ↓↓↓ Paste your Apps Script deployment URL here ↓↓↓
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxL7EnSCxIKNTdyZuqx7S1FB22nJv_e530LgB917KYhg2u0i8gwfjJxWIL-7i9ma4JMuQ/exec";
+  const SCRIPT_URL = "YOUR_APPS_SCRIPT_URL_HERE";
 </script>
 
 <!-- ─── Toast ────────────────────────────────────────────────────────────── -->
@@ -261,11 +261,11 @@ input:focus { outline: none; }
     <p class="muted">Who's swiping right now?</p>
   </div>
   <button class="player-btn fade-up" id="player-btn-p1" onclick="selectPlayer('p1')">
-    <span id="player-label-p1">Ravi</span>
+    <span id="player-label-p1">Partner 1</span>
     <span class="sub">Tap to start swiping as you</span>
   </button>
   <button class="player-btn fade-up" id="player-btn-p2" onclick="selectPlayer('p2')" style="animation-delay:0.08s">
-    <span id="player-label-p2">Jane</span>
+    <span id="player-label-p2">Partner 2</span>
     <span class="sub">Tap to start swiping as you</span>
   </button>
 </div>
@@ -396,7 +396,7 @@ input:focus { outline: none; }
 // ── State ─────────────────────────────────────────────────────────────────────
 let state = {
   names:   [],    // [{ id, name, gender, culture, meaning, origin, votes:{p1,p2} }]
-  players: { p1: 'Ravi', p2: 'Jane' },
+  players: { p1: 'Partner 1', p2: 'Partner 2' },
   current: null,  // 'p1' | 'p2'
   swipeIdx: 0,
   cultureSel: '',
@@ -416,8 +416,11 @@ const GENDER_COLORS = { Boy:'#7ab8e0', Girl:'#e07aa8', Neutral:'#9b8ed4' };
 
 // ── API ───────────────────────────────────────────────────────────────────────
 async function api(method, body) {
-  const opts = { method, headers:{'Content-Type':'application/json'} };
-  if (body) opts.body = JSON.stringify(body);
+  const opts = { method, redirect: 'follow' };
+  if (body) {
+    opts.headers = { 'Content-Type': 'text/plain' };
+    opts.body = JSON.stringify(body);
+  }
   const url = method === 'GET' ? SCRIPT_URL + '?action=getAll' : SCRIPT_URL;
   const r = await fetch(url, opts);
   const d = await r.json();
